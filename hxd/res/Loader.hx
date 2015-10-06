@@ -77,9 +77,17 @@ class Loader {
 		return new TiledMap(fs.get(path));
 	}
 
+	function loadTileSheet( path : String ) : TileSheet {
+		var i : TileSheet = cache.get(path);
+		if( i == null ) {
+			i = new TileSheet(loadImage(path), fs.get(path));
+			cache.set(path, i);
+		}
+		return i;
+	}
+
 	public function dispose() {
 		cleanCache();
 		fs.dispose();
 	}
-
 }
