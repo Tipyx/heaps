@@ -80,7 +80,7 @@ class Loader {
 	function loadTileSheet( path : String ) : TileSheet {
 		var i : TileSheet = cache.get(path);
 		if( i == null ) {
-			i = new TileSheet(loadImage(path), fs.get(path));
+			i = new TileSheet(loadImage(path.substr(0, -4) + "png"), fs.get(path));
 			cache.set(path, i);
 		}
 		return i;

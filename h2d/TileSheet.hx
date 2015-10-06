@@ -30,4 +30,8 @@ class TileSheet
 		}
 		g.push(main.sub(x, y, w, h, dx, dy));
 	}
+	
+	public inline function toString() {
+		trace("trololo");
+	}
 }

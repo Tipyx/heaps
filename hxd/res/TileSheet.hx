@@ -9,6 +9,7 @@ import hxd.res.Resource;
 class TileSheet extends Resource {
 	
 	var img : hxd.res.Image;
+	var sheet : h2d.TileSheet;
 
 	public function new(img:hxd.res.Image, entry) 
 	{
@@ -18,11 +19,14 @@ class TileSheet extends Resource {
 	}
 	
 	public function toTileSheet() : h2d.TileSheet {
+		if (sheet != null)
+			return sheet;
+		
 		var j = haxe.Json.parse(entry.getBytes().toString());
 		if (j.meta.app != "http://www.codeandweb.com/texturepacker")
 			throw "invalid data file " + "\"" + name + "\" should ba a JSON (Array or Hash) Texture Packer file";
 		
-		var ts = new h2d.TileSheet(img.toTile());
+		sheet = new h2d.TileSheet(img.toTile());
 		
 		var frames = cast(j.frames, Array<Dynamic>);
 		var groups  = new Map<String, Array<{ index : Int, data : Dynamic}>>();
@@ -55,14 +59,14 @@ class TileSheet extends Resource {
 				var t = f.data;
 				var px : Float = t.pivot.x;
 				var py : Float = t.pivot.y;
-				ts.pushTile(k,
+				sheet.pushTile(k,
 					t.frame.x, t.frame.y,
 					t.frame.w, t.frame.h, 
 					Std.int(t.spriteSourceSize.x - t.sourceSize.w * px),
 					Std.int(t.spriteSourceSize.y - t.sourceSize.h * py));
 			}
 		}
-		return ts;
+		return sheet;
 	}
 	
 }
