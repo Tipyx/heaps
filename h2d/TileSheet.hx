@@ -2,11 +2,11 @@ package h2d;
 
 class TileSheet
 {
-	var main : Tile;
-	var groups : Map<String, Array<Tile>>;
+	public var mainTile		: Tile;
+	var groups				: Map<String, Array<Tile>>;
 	
 	public function new(t) {
-		this.main = t;
+		this.mainTile = t;
 		groups = new Map<String, Array<Tile>>();
 	}
 	
@@ -19,7 +19,7 @@ class TileSheet
 	}
 	
 	public inline function setTile(name : String, x, y, w, h, dx = 0, dy = 0) {
-		groups.set(name, [main.sub(x, y, w, h, dx, dy)]);
+		groups.set(name, [mainTile.sub(x, y, w, h, dx, dy)]);
 	}
 	
 	public inline function pushTile(group : String, x, y, w, h, dx = 0, dy = 0) {
@@ -28,7 +28,7 @@ class TileSheet
 			g = new Array<Tile>();
 			groups.set(group, g);
 		}
-		g.push(main.sub(x, y, w, h, dx, dy));
+		g.push(mainTile.sub(x, y, w, h, dx, dy));
 	}
 	
 	public inline function toString() {
