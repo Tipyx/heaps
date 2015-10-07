@@ -32,6 +32,8 @@ class TileSheet
 	}
 	
 	public inline function toString() {
-		trace("trololo");
+		for (k in groups.keys()) {
+			trace(k + " : " + groups.get(k));
+		}
 	}
 }
