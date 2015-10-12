@@ -30,7 +30,7 @@ class TileSheet extends Resource {
 		
 		var frames = cast(j.frames, Array<Dynamic>);
 		var groups  = new Map<String, Array<{ index : Int, data : Dynamic}>>();
-		var r = ~/([a-zA-Z]+)[-_]?([0-9]*)/;
+		var r = ~/([a-zA-Z_]+)([-_]([0-9]))?\./;
 		
 		inline function pushFrame(group, index, data) {
 			var g = groups.get(group);
@@ -44,15 +44,16 @@ class TileSheet extends Resource {
 		}
 		
 		if (Std.is(frames, Array)) for (f in frames) {
-			r.match(f.filename);
-			pushFrame(r.matched(1), r.matched(2), f);
+			if (r.match(f.filename))
+				pushFrame(r.matched(1), r.matched(2), f);
 		}
 		else for (f in Reflect.fields(frames)) {
-			r.match(f);
-			pushFrame(r.matched(1), r.matched(2), Reflect.field(frames, f));
+			if (r.match(f))
+				pushFrame(r.matched(1), r.matched(2), Reflect.field(frames, f));
 		}
 		
 		for (k in groups.keys()) {
+			trace(k);
 			var g = groups.get(k);
 			g.sort(function(a, b) return a.index - b.index);
 			for (f in g) {
