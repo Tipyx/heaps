@@ -7,15 +7,19 @@ typedef Texture = flash.display3D.textures.TextureBase;
 #elseif js
 typedef IndexBuffer = js.html.webgl.Buffer;
 typedef VertexBuffer = { b : js.html.webgl.Buffer, stride : Int };
-typedef Texture = { t : js.html.webgl.Texture, width : Int, height : Int, fmt : Int, ?fb : js.html.webgl.Framebuffer, ?rb : js.html.webgl.Renderbuffer };
+typedef Texture = { t : js.html.webgl.Texture, width : Int, height : Int, internalFmt : Int, pixelFmt : Int, ?fb : js.html.webgl.Framebuffer, ?rb : js.html.webgl.Renderbuffer };
 #elseif nme
 typedef IndexBuffer = nme.gl.GLBuffer;
 typedef VertexBuffer = { b : nme.gl.GLBuffer, stride : Int };
-typedef Texture = { t : nme.gl.GLTexture, width : Int, height : Int, fmt : Int, ?fb : nme.gl.GLFramebuffer, ?rb : nme.gl.GLRenderbuffer };
+typedef Texture = { t : nme.gl.GLTexture, width : Int, height : Int, internalFmt : Int, pixelFmt : Int, ?fb : nme.gl.GLFramebuffer, ?rb : nme.gl.GLRenderbuffer };
+#elseif lime
+typedef IndexBuffer = lime.graphics.opengl.GLBuffer;
+typedef VertexBuffer = { b : lime.graphics.opengl.GLBuffer, stride : Int };
+typedef Texture = { t : lime.graphics.opengl.GLTexture, width : Int, height : Int, internalFmt : Int, pixelFmt : Int, ?fb : lime.graphics.opengl.GLFramebuffer, ?rb : lime.graphics.opengl.GLRenderbuffer };
 #elseif hxsdl
 typedef IndexBuffer = sdl.GL.Buffer;
 typedef VertexBuffer = { b : sdl.GL.Buffer, stride : Int };
-typedef Texture = { t : sdl.GL.Texture, width : Int, height : Int, fmt : Int, ?fb : sdl.GL.Framebuffer, ?rb : sdl.GL.Renderbuffer };
+typedef Texture = { t : sdl.GL.Texture, width : Int, height : Int, internalFmt : Int, pixelFmt : Int, ?fb : sdl.GL.Framebuffer, ?rb : sdl.GL.Renderbuffer };
 #else
 typedef IndexBuffer = Int;
 typedef VertexBuffer = Int;
@@ -62,6 +66,10 @@ class Driver {
 		return false;
 	}
 
+	public function isSupportedFormat( fmt : h3d.mat.Data.TextureFormat ) {
+		return false;
+	}
+
 	public function isDisposed() {
 		return true;
 	}
@@ -88,10 +96,7 @@ class Driver {
 	public function clear( ?color : h3d.Vector, ?depth : Float, ?stencil : Int ) {
 	}
 
-	public function setCapture( bmp : hxd.BitmapData, callb : Void -> Void ) {
-	}
-
-	public function reset() {
+	public function captureRenderBuffer( pixels : hxd.Pixels ) {
 	}
 
 	public function getDriverName( details : Bool ) {
@@ -131,6 +136,9 @@ class Driver {
 	}
 
 	public function setRenderTarget( tex : Null<h3d.mat.Texture> ) {
+	}
+
+	public function setRenderTargets( textures : Array<h3d.mat.Texture> ) {
 	}
 
 	public function present() {

@@ -94,6 +94,11 @@ class BaseLibrary {
 	var animationEvents : Array<{ frame : Int, data : String }>;
 
 	/**
+		The FBX version that was decoded
+	**/
+	public var version : Float = 0.;
+
+	/**
 		Allows to prevent some terminal unskinned joints to be removed, for instance if we want to track their position
 	**/
 	public var keepJoints : Map<String,Bool>;
@@ -142,6 +147,11 @@ class BaseLibrary {
 	public function load( root : FbxNode ) {
 		reset();
 		this.root = root;
+
+		version = root.get("FBXHeaderExtension.FBXVersion").props[0].toInt() / 1000;
+		if( Std.int(version) != 7 )
+			throw "FBX Version 7.x required : use FBX 2010 export";
+
 		for( c in root.childs )
 			init(c);
 
@@ -442,7 +452,7 @@ class BaseLibrary {
 			return null;
 		// if it's a move animation on a terminal unskinned joint, let's skip it
 		if( def.wasRemoved != null ) {
-			if( curveName != "Visibility" && curveName != "UV" )
+			if( (curveName != "Visibility" && curveName != "UV") || def.wasRemoved == -1 )
 				return null;
 			// apply it on the skin instead
 			model = ids.get(def.wasRemoved);
@@ -461,7 +471,7 @@ class BaseLibrary {
 
 
 	public function mergeModels( modelNames : Array<String> ) {
-		if( modelNames.length == 0 )
+		if( modelNames.length <= 1 )
 			return;
 		var models = root.getAll("Objects.Model");
 		function getModel(name) {
@@ -993,6 +1003,7 @@ class BaseLibrary {
 				if( geom == null ) continue;
 				var model2 = getParent(geom, "Model");
 				if( model2 == null ) continue;
+
 				var id = model2.getId();
 				var g = mergeGroups.get(id);
 				if( g != null ) {
@@ -1010,6 +1021,15 @@ class BaseLibrary {
 		}
 		for( group in toMerge ) {
 			group.sort(function(m1, m2) return Reflect.compare(m1.getName(), m2.getName()));
+			for( g in toMerge )
+				if( g != group ) {
+					var found = false;
+					for( m in group )
+						if( g.remove(m) )
+							found = true;
+					if( found )
+						g.push(group[0]);
+				}
 			mergeModels([for( g in group ) g.getName()]);
 		}
 	}

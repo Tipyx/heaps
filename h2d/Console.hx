@@ -31,7 +31,7 @@ class Console extends h2d.Sprite {
 
 	public var shortKeyChar : Int = "/".code;
 
-	public function new(font:h2d.Font,parent) {
+	public function new(font:h2d.Font,?parent) {
 		super(parent);
 		height = font.lineHeight + 2;
 		logTxt = new h2d.HtmlText(font, this);
@@ -297,7 +297,7 @@ class Console extends h2d.Sprite {
 	}
 
 	override function sync(ctx:h2d.RenderContext) {
-		var scene = getScene();
+		var scene = ctx.scene;
 		if( scene != null ) {
 			x = 0;
 			y = scene.height - height;

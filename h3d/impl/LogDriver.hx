@@ -25,6 +25,10 @@ class LogDriver extends Driver {
 		return d.hasFeature(f);
 	}
 
+	override function isSupportedFormat( fmt : h3d.mat.Data.TextureFormat ) {
+		return d.isSupportedFormat(fmt);
+	}
+
 	override function isDisposed() {
 		return d.isDisposed();
 	}
@@ -44,14 +48,9 @@ class LogDriver extends Driver {
 		d.clear(color, depth, stencil);
 	}
 
-	override function setCapture( bmp : hxd.BitmapData, callb : Void -> Void ) {
-		log('SetCapture ${bmp.width}x${bmp.height}');
-		d.setCapture(bmp, callb);
-	}
-
-	override function reset() {
-		log('Reset');
-		d.reset();
+	override function captureRenderBuffer( pixels : hxd.Pixels ) {
+		log('CaptureRenderBuffer ${pixels.width}x${pixels.height}');
+		d.captureRenderBuffer(pixels);
 	}
 
 	override function getDriverName( details : Bool ) {
@@ -264,6 +263,11 @@ class LogDriver extends Driver {
 	override function setRenderTarget( tex : Null<h3d.mat.Texture> ) {
 		log('SetRenderTarget $tex');
 		d.setRenderTarget(tex);
+	}
+
+	override function setRenderTargets( textures : Array<h3d.mat.Texture> ) {
+		log('SetRenderTargets $textures');
+		d.setRenderTargets(textures);
 	}
 
 	override function present() {

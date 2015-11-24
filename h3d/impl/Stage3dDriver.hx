@@ -64,12 +64,11 @@ class Stage3dDriver extends Driver {
 	var curAttributes : Int;
 	var curTextures : Array<h3d.mat.Texture>;
 	var curSamplerBits : Array<Int>;
-	var inTarget : h3d.mat.Texture;
+	var renderTargets : Int;
 	var antiAlias : Int;
 	var width : Int;
 	var height : Int;
 	var enableDraw : Bool;
-	var capture : { bmp : hxd.BitmapData, callb : Void -> Void };
 	var frame : Int;
 	var programs : Map<Int, CompiledShader>;
 	var isStandardMode : Bool;
@@ -103,7 +102,7 @@ class Stage3dDriver extends Driver {
 		this.frame = frame;
 	}
 
-	override function reset() {
+	function reset() {
 		enableDraw = true;
 		curMatBits = -1;
 		curShader = null;
@@ -186,8 +185,19 @@ class Stage3dDriver extends Driver {
 		ctx.clear( color == null ? 0 : color.r, color == null ? 0 : color.g, color == null ? 0 : color.b, color == null ? 1 : color.a, depth == null ? 1 : depth, stencil == null ? 0 : stencil, mask);
 	}
 
-	override function setCapture( bmp : hxd.BitmapData, onCapture : Void -> Void ) {
-		capture = { bmp : bmp, callb : onCapture };
+	override function captureRenderBuffer( pixels : hxd.Pixels ) {
+		if( renderTargets != 0 )
+			throw "Can't capture render target in flash";
+		var bmp = new flash.display.BitmapData(pixels.width, pixels.height, true, 0);
+		ctx.drawToBitmapData(bmp);
+
+		var pix = bmp.getPixels(bmp.rect);
+		bmp.dispose();
+		var b = pixels.bytes.getData();
+		b.position = 0;
+		b.writeBytes(pix, 0, pixels.width * pixels.height * 4);
+		pixels.format = ARGB;
+		pixels.flags.set(AlphaPremultiplied);
 	}
 
 	override function dispose() {
@@ -201,14 +211,6 @@ class Stage3dDriver extends Driver {
 	}
 
 	override function present() {
-		if( capture != null ) {
-			ctx.drawToBitmapData(capture.bmp.toNative());
-			ctx.present();
-			var callb = capture.callb;
-			capture = null;
-			callb();
-			return;
-		}
 		ctx.present();
 	}
 
@@ -252,10 +254,22 @@ class Stage3dDriver extends Driver {
 		return levels;
 	}
 
+	override function isSupportedFormat( fmt : h3d.mat.Data.TextureFormat ) {
+		return switch( fmt ) {
+		case BGRA: true;
+		case RGBA16F: true;
+		default: false;
+		}
+	}
+
 	override function allocTexture( t : h3d.mat.Texture ) : Texture {
 		if( t.flags.has(TargetDepth) )
 			throw "TargetDepth not supported in Stage3D";
-		var fmt = flash.display3D.Context3DTextureFormat.BGRA;
+		var fmt = switch( t.format ) {
+		case BGRA: flash.display3D.Context3DTextureFormat.BGRA;
+		case RGBA16F: flash.display3D.Context3DTextureFormat.RGBA_HALF_FLOAT;
+		default: throw "Unsupported texture format " + t.format;
+		}
 		t.lastFrame = frame;
 		t.flags.unset(WasCleared);
 		try {
@@ -388,9 +402,41 @@ class Stage3dDriver extends Driver {
 
 	function compileShader( s : hxsl.RuntimeShader.RuntimeShaderData, usedTextures : Array<Bool> ) {
 		//trace(hxsl.Printer.shaderToString(s.data));
-		var agal = hxsl.AgalOut.toAgal(s, isStandardMode ? 2 : 1);
+		var agalVersion = isStandardMode ? 2 : 1;
+		var agal = hxsl.AgalOut.toAgal(s, agalVersion);
 		//var old = format.agal.Tools.toString(agal);
-		agal = new hxsl.AgalOptim().optimize(agal);
+		var optim = new hxsl.AgalOptim();
+		agal = optim.optimize(agal);
+		#if debug
+		var maxVarying = format.agal.Tools.getProps(RVar, !s.vertex, agalVersion).count;
+		var maxTextures = format.agal.Tools.getProps(RTexture, !s.vertex, agalVersion).count;
+		for( op in agal.code )
+			optim.iter(op, function(r, _) {
+				switch( r.t ) {
+				case RVar:
+					if( r.index >= maxVarying ) {
+						var vars = [];
+						for( v in s.data.vars )
+							switch( v.kind ) {
+							case Var: vars.push(v.name);
+							default:
+							}
+						throw "Too many varying for this shader ("+vars.join(",")+")";
+					}
+				case RTexture:
+					if( r.index >= maxTextures ) {
+						var vars = [];
+						for( v in s.data.vars )
+							switch( v.type ) {
+							case TSampler2D, TSamplerCube: vars.push(v.name);
+							default:
+							}
+						throw "Too many textures for this shader ("+vars.join(",")+")";
+					}
+				default:
+				}
+			});
+		#end
 		//var opt = format.agal.Tools.toString(agal);
 		for( op in agal.code )
 			switch( op ) {
@@ -398,7 +444,7 @@ class Stage3dDriver extends Driver {
 			default:
 			}
 		var size = s.globalsSize+s.paramsSize;
-		var max = format.agal.Tools.getProps(RConst, !s.vertex, isStandardMode?2:1).count;
+		var max = format.agal.Tools.getProps(RConst, !s.vertex, agalVersion).count;
 		if( size > max )
 			throw (s.vertex?"Vertex ":"Fragment ") + " shader uses " + size+" constant registers while " + max + " is allowed";
 		var o = new haxe.io.BytesOutput();
@@ -593,7 +639,6 @@ class Stage3dDriver extends Driver {
 					ctx.setVertexBufferAt(pos++, m.vbuf, offset, FORMAT[size]);
 					offset += size == 0 ? 1 : size;
 					if( offset > m.b.stride ) throw "Buffer is missing '"+s+"' data, set it to RAW format ?" #if debug + @:privateAccess v.allocPos #end;
-					bits >>= 3;
 				}
 				bits >>= 3;
 			}
@@ -676,8 +721,8 @@ class Stage3dDriver extends Driver {
 				height += y;
 				y = 0;
 			}
-			var tw = inTarget == null ? this.width : 9999;
-			var th = inTarget == null ? this.height : 9999;
+			var tw = renderTargets == 0 ? this.width : 9999;
+			var th = renderTargets == 0 ? this.height : 9999;
 			if( x + width > tw ) width = tw - x;
 			if( y + height > th ) height = th - y;
 			enableDraw = width > 0 && height > 0;
@@ -687,14 +732,19 @@ class Stage3dDriver extends Driver {
 	}
 
 	override function setRenderTarget( t : Null<h3d.mat.Texture>) {
+		if( renderTargets > 1 ) {
+			for( i in 1...renderTargets )
+				ctx.setRenderToTexture(null, false, 0, 0, i);
+			renderTargets = 0;
+		}
 		if( t == null ) {
 			ctx.setRenderToBackBuffer();
-			inTarget = null;
+			renderTargets = 0;
 		} else {
 			if( t.t == null )
 				t.alloc();
 			ctx.setRenderToTexture(t.t, t.flags.has(TargetUseDefaultDepth));
-			inTarget = t;
+			renderTargets = 1;
 			t.lastFrame = frame;
 			// make sure we at least clear the color the first time
 			if( flashVersion >= 15 && !t.flags.has(WasCleared) ) {
@@ -702,6 +752,24 @@ class Stage3dDriver extends Driver {
 				ctx.clear(0, 0, 0, 0, 1, 0, flash.display3D.Context3DClearMask.COLOR);
 			}
 		}
+		reset();
+	}
+
+	override function setRenderTargets( textures : Array<h3d.mat.Texture>) {
+		if( textures.length == 0 ) {
+			setRenderTarget(null);
+			return;
+		}
+		for( i in 0...textures.length ) {
+			var t = textures[i];
+			if( t.t == null )
+				t.alloc();
+			ctx.setRenderToTexture(t.t, t.flags.has(TargetUseDefaultDepth), 0, 0, i);
+			t.lastFrame = frame;
+		}
+		for( i in textures.length...renderTargets )
+			ctx.setRenderToTexture(null, false, 0, 0, i);
+		renderTargets = textures.length;
 		reset();
 	}
 

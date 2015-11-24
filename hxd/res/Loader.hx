@@ -77,6 +77,10 @@ class Loader {
 		return new TiledMap(fs.get(path));
 	}
 
+<<<<<<< HEAD
+	function loadAtlas( path : String ) {
+		return new Atlas(fs.get(path));
+=======
 	function loadTileSheet( path : String ) : TileSheet {
 		var i : TileSheet = cache.get(path);
 		if( i == null ) {
@@ -84,6 +88,7 @@ class Loader {
 			cache.set(path, i);
 		}
 		return i;
+>>>>>>> refs/remotes/origin/texture-packer
 	}
 
 	public function dispose() {

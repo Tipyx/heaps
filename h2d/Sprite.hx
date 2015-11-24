@@ -247,6 +247,14 @@ class Sprite {
 		if( this != null && parent != null ) parent.removeChild(this);
 	}
 
+	public function drawTo( t : h3d.mat.Texture ) {
+		var s = getScene();
+		var needDispose = s == null;
+		if( s == null ) s = new h2d.Scene();
+		@:privateAccess s.drawImplTo(this, t);
+		if( needDispose ) s.dispose();
+	}
+
 	function draw( ctx : RenderContext ) {
 	}
 
@@ -418,11 +426,10 @@ class Sprite {
 		add(bounds.xMax, bounds.yMax);
 
 		// clip with our scene
-		var scene = getScene();
 		if( view.xMin < 0 ) view.xMin = 0;
 		if( view.yMin < 0 ) view.yMin = 0;
-		if( view.xMax > scene.width ) view.xMax = scene.width;
-		if( view.yMax > scene.height ) view.yMax = scene.height;
+		@:privateAccess if( view.xMax > ctx.curWidth ) view.xMax = ctx.curWidth;
+		@:privateAccess if( view.yMax > ctx.curHeight ) view.yMax = ctx.curHeight;
 
 		// inverse our matrix
 		var invDet = 1 / (matA * matD - matB * matC);

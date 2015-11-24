@@ -17,6 +17,8 @@ class Default extends Base {
 	inline function get_globals() return manager.globals;
 
 	@global("camera.view") var cameraView : h3d.Matrix = ctx.camera.mcam;
+	@global("camera.zNear") var cameraNear : Float = ctx.camera.zNear;
+	@global("camera.zFar") var cameraFar : Float = ctx.camera.zFar;
 	@global("camera.proj") var cameraProj : h3d.Matrix = ctx.camera.mproj;
 	@global("camera.position") var cameraPos : h3d.Vector = ctx.camera.pos;
 	@global("camera.projDiag") var cameraProjDiag : h3d.Vector = new h3d.Vector(ctx.camera.mproj._11,ctx.camera.mproj._22,ctx.camera.mproj._33,ctx.camera.mproj._44);
@@ -38,6 +40,10 @@ class Default extends Base {
 
 	override function getTexture( index = 0 ) : h3d.mat.Texture {
 		return tcache.get(index);
+	}
+
+	override public function setTexture(t:h3d.mat.Texture, index = 0) {
+		tcache.set(t, index);
 	}
 
 	override function dispose() {
@@ -71,7 +77,7 @@ class Default extends Base {
 			shaders = processShaders(p, shaders);
 			if( p.pass.enableLights && ctx.lightSystem != null ) {
 				if( !lightInit ) {
-					ctx.lightSystem.initLights(globals, ctx);
+					ctx.lightSystem.initGlobals(globals);
 					lightInit = true;
 				}
 				shaders = ctx.lightSystem.computeLight(p.obj, shaders);

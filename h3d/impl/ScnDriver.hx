@@ -72,6 +72,10 @@ class ScnDriver extends Driver {
 		return d.hasFeature(f);
 	}
 
+	override function isSupportedFormat( fmt ) {
+		return d.isSupportedFormat(fmt);
+	}
+
 	override function isDisposed() {
 		return d.isDisposed();
 	}
@@ -90,13 +94,8 @@ class ScnDriver extends Driver {
 		d.clear(color, depth, stencil);
 	}
 
-	override function setCapture( bmp : hxd.BitmapData, callb : Void -> Void ) {
-		d.setCapture(bmp, callb);
-	}
-
-	override function reset() {
-		ops.push(Reset);
-		d.reset();
+	override function captureRenderBuffer( pixels : hxd.Pixels ) {
+		d.captureRenderBuffer(pixels);
 	}
 
 	override function getDriverName( details : Bool ) {
@@ -330,8 +329,6 @@ class ScnDriver extends Driver {
 			d.begin(++frame);
 		case Clear(color, depth, stencil):
 			d.clear(color,depth,stencil);
-		case Reset:
-			d.reset();
 		case Resize(w, h):
 			d.resize(w,h);
 		case SelectShader(id, data):
