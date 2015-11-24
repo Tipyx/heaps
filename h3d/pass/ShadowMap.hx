@@ -10,7 +10,6 @@ class ShadowMap extends Default {
 	var shadowBiasId : Int;
 	public var border : Border;
 	public var size(default,set) : Int;
-	public var lightDirection : h3d.Vector;
 	public var color : h3d.Vector;
 	public var power = 10.0;
 	public var bias = 0.01;
@@ -20,7 +19,6 @@ class ShadowMap extends Default {
 		super();
 		this.size = size;
 		priority = 9;
-		lightDirection = new h3d.Vector(0, 0, -1);
 		lightCamera = new h3d.Camera();
 		lightCamera.orthoBounds = new h3d.col.Bounds();
 		shadowMapId = hxsl.Globals.allocID("shadow.map");
@@ -72,18 +70,24 @@ class ShadowMap extends Default {
 	override function draw( passes ) {
 		var texture = tcache.allocTarget("shadowMap", ctx, size, size);
 		var ct = ctx.camera.target;
-		lightCamera.target.set(lightDirection.x, lightDirection.y, lightDirection.z);
-		lightCamera.target.normalize();
+		var slight = ctx.lightSystem.shadowLight;
+		if( slight == null )
+			lightCamera.target.set(0, 0, -1);
+		else {
+			lightCamera.target.set(slight.direction.x, slight.direction.y, slight.direction.z);
+			lightCamera.target.normalize();
+		}
 		lightCamera.target.x += ct.x;
 		lightCamera.target.y += ct.y;
 		lightCamera.target.z += ct.z;
 		lightCamera.pos.load(ct);
 		lightCamera.update();
 
-		ctx.engine.setTarget(texture);
+		ctx.engine.pushTarget(texture);
 		ctx.engine.clear(0xFFFFFF, 1, tcache.fullClearRequired ? 0 : null);
 		passes = super.draw(passes);
 		if( border != null ) border.render();
+		ctx.engine.popTarget();
 
 		if( blur.quality > 0 && blur.passes > 0 )
 			blur.apply(texture, tcache.allocTarget("tmpBlur", ctx, size, size, false), true);

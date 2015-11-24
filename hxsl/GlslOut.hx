@@ -19,6 +19,7 @@ class GlslOut {
 		m.set(ToFloat, "float");
 		m.set(ToBool, "bool");
 		m.set(Texture2D, "_texture2D");
+		m.set(LReflect, "reflect");
 		for( g in m )
 			KWDS.set(g, true);
 		m;
@@ -26,8 +27,9 @@ class GlslOut {
 	static var MAT34 = "struct mat3x4 { vec4 a; vec4 b; vec4 c; };";
 
 	var buf : StringBuf;
+	var exprIds = 0;
 	var exprValues : Array<String>;
-	var locals : Array<TVar>;
+	var locals : Map<Int,TVar>;
 	var decls : Array<String>;
 	var isVertex : Bool;
 	var allNames : Map<String, Int>;
@@ -133,7 +135,7 @@ class GlslOut {
 	function addValue( e : TExpr, tabs : String ) {
 		switch( e.e ) {
 		case TBlock(el):
-			var name = "val" + exprValues.length;
+			var name = "val" + (exprIds++);
 			var tmp = buf;
 			buf = new StringBuf();
 			addType(e.t);
@@ -242,7 +244,7 @@ class GlslOut {
 			});
 			addValue(e1, tabs);
 		case TVarDecl(v, init):
-			locals.push(v);
+			locals.set(v.id, v);
 			if( init != null ) {
 				ident(v);
 				add(" = ");
@@ -366,7 +368,7 @@ class GlslOut {
 	}
 
 	public function run( s : ShaderData ) {
-		locals = [];
+		locals = new Map();
 		decls = [];
 		buf = new StringBuf();
 		exprValues = [];
