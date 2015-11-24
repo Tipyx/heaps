@@ -31,11 +31,8 @@ class FileTree {
 		pairedExt.set("fnt", ["png"]);
 		pairedExt.set("fbx", ["png","jpg","jpeg","gif"]);
 		pairedExt.set("cdb", ["img"]);
-<<<<<<< HEAD
 		pairedExt.set("atlas", ["png"]);
-=======
 		pairedExt.set("json", ["png"]);
->>>>>>> refs/remotes/origin/texture-packer
 		isFlash = Context.defined("flash");
 		isJS = Context.defined("js");
 		isCPP = Context.defined("cpp");
@@ -381,13 +378,10 @@ class FileTree {
 			return { e : macro loader.loadSound($epath), t : macro : hxd.res.Sound };
 		case "tmx":
 			return { e : macro loader.loadTiledMap($epath), t : macro : hxd.res.TiledMap };
-<<<<<<< HEAD
 		case "atlas":
 			return { e : macro loader.loadAtlas($epath), t : macro : hxd.res.Atlas };
-=======
 		case "json" :
 			return { e : macro loader.loadTileSheet($epath), t : macro : hxd.res.TileSheet };
->>>>>>> refs/remotes/origin/texture-packer
 		default:
 			return { e : macro loader.loadData($epath), t : macro : hxd.res.Resource };
 		}
