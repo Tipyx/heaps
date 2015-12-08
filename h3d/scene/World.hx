@@ -11,6 +11,7 @@ class WorldChunk {
 	public var buffers : Map<Int, h3d.scene.Mesh>;
 	public var bounds : h3d.col.Bounds;
 	public var initialized = false;
+	public var lastFrame : Int;
 
 	public function new(cx, cy) {
 		this.cx = cx;
@@ -61,7 +62,7 @@ class WorldModelGeometry {
 }
 
 class WorldModel {
-	public var r : hxd.res.FbxModel;
+	public var r : hxd.res.Model;
 	public var stride : Int;
 	public var buf : hxd.FloatBuffer;
 	public var idx : hxd.IndexBuffer;
@@ -122,8 +123,8 @@ class World extends Object {
 		return Alpha;
 	}
 
-	function resolveSpecularTexture( diffuse : hxd.res.Image ) : hxd.res.Image {
-		var path = diffuse.entry.directory + "spec.jpg";
+	function resolveSpecularTexture( path : String ) : hxd.res.Image {
+		path =  path.substr(0, path.length - 4) + "spec.jpg";
 		try {
 			return hxd.res.Loader.currentInstance.load(path).toImage();
 		} catch( e : hxd.res.NotFound ) {
@@ -131,8 +132,10 @@ class World extends Object {
 		}
 	}
 
-	function loadMaterialTexture( r : hxd.res.FbxModel, mat : hxd.fmt.hmd.Data.Material ) : WorldMaterial {
-		var texturePath = r.entry.directory + mat.diffuseTexture.split("/").pop();
+	function loadMaterialTexture( r : hxd.res.Model, mat : hxd.fmt.hmd.Data.Material ) : WorldMaterial {
+		var texturePath = r.entry.directory;
+		if( texturePath != "" ) texturePath += "/";
+		texturePath += mat.diffuseTexture.split("/").pop();
 
 		var m = textures.get(texturePath);
 		if( m != null )
@@ -158,7 +161,7 @@ class World extends Object {
 
 		var specTex = null;
 		if( enableSpecular ) {
-			var res = resolveSpecularTexture(rt);
+			var res = resolveSpecularTexture(texturePath);
 			if( btex.spec == null )
 				btex.spec = new h3d.mat.BigTexture(-1, bigTextureSize, bigTextureBG);
 			if( res != null )
@@ -186,7 +189,7 @@ class World extends Object {
 		}
 	}
 
-	public function loadModel( r : hxd.res.FbxModel ) : WorldModel {
+	public function loadModel( r : hxd.res.Model ) : WorldModel {
 		var lib = r.toHmd();
 		var models = lib.header.models;
 		var format = buildFormat();
@@ -366,9 +369,12 @@ class World extends Object {
 
 		for( c in allChunks ) {
 			c.root.visible = c.bounds.inFrustum(ctx.camera.m);
-			if(c.root.visible && !c.initialized) {
-				c.initialized = true;
-				initSoil(c);
+			if( c.root.visible ) {
+				if( !c.initialized) {
+					c.initialized = true;
+					initSoil(c);
+				}
+				c.lastFrame = ctx.frame;
 			}
 		}
 	}
