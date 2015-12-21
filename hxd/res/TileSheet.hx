@@ -24,7 +24,7 @@ class TileSheet extends Resource {
 		
 		var j = haxe.Json.parse(entry.getBytes().toString());
 		if (j.meta.app != "http://www.codeandweb.com/texturepacker")
-			throw "invalid data file " + "\"" + name + "\" should ba a JSON (Array or Hash) Texture Packer file";
+			throw "invalid data file " + "\"" + name + "\" should ba a JSON (Array) Texture Packer file";
 		
 		sheet = new h2d.TileSheet(img.toTile());
 		
